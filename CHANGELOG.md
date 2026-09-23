@@ -1,11 +1,14 @@
 # Changelog
 
+## 0.2.0-beta
+- Expanded component API with Label, Text and MultiDropdown.
+- Added option OnChanged, RemoveOnChanged and Destroy lifecycle APIs.
+- Added window title, subtitle, size and position setters.
+- Added string-based SelectTab support.
+- Added Midnight, Rose and Emerald theme presets.
+- Added Signal and Janitor utilities.
+- Added KeybindManager, PerformanceManager and CommandManager.
+- Added a larger Showcase example and API and architecture docs.
+
 ## 0.1.0-alpha
-- Initial independent SmoothFluent core.
-- Fluent-style Window, Tab and Section API.
-- Buttons, paragraphs, toggles, sliders, inputs, dropdowns, color state and keybinds.
-- Notifications and dialogs.
-- Dark, AMOLED and Ocean themes.
-- Search filtering.
-- SaveManager, InterfaceManager, FloatingButtonManager and MediaManager foundations.
-- Rojo project and example.
+- Initial SmoothFluent foundation.
