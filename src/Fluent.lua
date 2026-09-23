@@ -4,7 +4,7 @@ local TextService=game:GetService("TextService")
 local CoreGui=game:GetService("CoreGui")
 
 local Fluent={
- Version="0.4.0-beta",
+ Version="0.5.0-beta",
  Flags={},Options={},Themes={},_windows={},
  _connections={},_destroyed=false
 }
@@ -303,85 +303,204 @@ resize();return sec
 end
 
 function Fluent:CreateWindow(o)
- o=o or {};local w={Title=o.Title or "SmoothFluent",SubTitle=o.SubTitle or "",Size=o.Size or UDim2.fromOffset(620,470),Tabs={},_tabs={},_visible=true};table.insert(self._windows,w)
- local gui=Instance.new("ScreenGui");gui.Name="SmoothFluent_"..math.random(10000,99999);gui.ResetOnSpawn=false;gui.IgnoreGuiInset=true;gui.Parent=parentGui();w.Gui=gui
- local main=Instance.new("Frame");main.Size=w.Size;main.Position=o.Position or UDim2.new(.5,-w.Size.X.Offset/2,.5,-w.Size.Y.Offset/2);main.BackgroundColor3=self.CurrentTheme.Background;main.BackgroundTransparency=.04;main.Parent=gui;corner(main,14);stroke(main,self.CurrentTheme.Border,.1);w.Main=main
- local bar=Instance.new("Frame");bar.BackgroundTransparency=1;bar.Size=UDim2.new(1,0,0,58);bar.Parent=main;drag(bar,main)
- local title=text(bar,w.Title,18);title.Position=UDim2.fromOffset(18,7);title.Size=UDim2.new(1,-180,0,25);title.Font=Enum.Font.GothamBold
- local sub=text(bar,w.SubTitle,11,self.CurrentTheme.SubText);sub.Position=UDim2.fromOffset(19,32);sub.Size=UDim2.new(1,-180,0,18)
+ o=o or {}
+ local size=o.Size or UDim2.fromOffset(680,500)
+ local w={Title=o.Title or "SmoothFluent",SubTitle=o.SubTitle or "",Size=size,Tabs={},_tabs={},_visible=true,TabWidth=o.TabWidth or 155}
+ table.insert(self._windows,w)
+
+ local gui=Instance.new("ScreenGui")
+ gui.Name="SmoothFluent_"..math.random(10000,99999)
+ gui.ResetOnSpawn=false;gui.IgnoreGuiInset=true;gui.ZIndexBehavior=Enum.ZIndexBehavior.Sibling;gui.Parent=parentGui();w.Gui=gui
+
+ local shadow=Instance.new("Frame")
+ shadow.Name="Shadow";shadow.Size=size;shadow.Position=o.Position or UDim2.new(.5,-size.X.Offset/2,.5,-size.Y.Offset/2)
+ shadow.BackgroundColor3=Color3.new(0,0,0);shadow.BackgroundTransparency=.55;shadow.ZIndex=0;shadow.Parent=gui;corner(shadow,16)
+
+ local main=Instance.new("Frame")
+ main.Name="Window";main.Size=size;main.Position=shadow.Position
+ main.BackgroundColor3=self.CurrentTheme.Background;main.BackgroundTransparency=o.Acrylic and .14 or .02
+ main.ClipsDescendants=true;main.ZIndex=1;main.Parent=gui;corner(main,16);stroke(main,self.CurrentTheme.Border,.05);w.Main=main
+
+ local gradient=Instance.new("UIGradient")
+ gradient.Rotation=35
+ gradient.Color=ColorSequence.new(self.CurrentTheme.Background,self.CurrentTheme.Surface)
+ gradient.Transparency=NumberSequence.new({NumberSequenceKeypoint.new(0,.1),NumberSequenceKeypoint.new(1,.32)})
+ gradient.Parent=main
+
+ local topLine=Instance.new("Frame")
+ topLine.BackgroundColor3=self.CurrentTheme.Accent;topLine.BackgroundTransparency=.15;topLine.BorderSizePixel=0
+ topLine.Position=UDim2.fromOffset(18,58);topLine.Size=UDim2.new(1,-36,0,1);topLine.ZIndex=4;topLine.Parent=main
+
+ local bar=Instance.new("Frame")
+ bar.BackgroundTransparency=1;bar.Size=UDim2.new(1,0,0,60);bar.ZIndex=3;bar.Parent=main
+ drag(bar,main)
+
+ local title=text(bar,w.Title,18);title.Position=UDim2.fromOffset(20,7);title.Size=UDim2.new(1,-310,0,25);title.Font=Enum.Font.GothamBold
+ local sub=text(bar,w.SubTitle,11,self.CurrentTheme.SubText);sub.Position=UDim2.fromOffset(21,33);sub.Size=UDim2.new(1,-310,0,18)
+
  local search
- if o.Search~=false then search=Instance.new("TextBox");search.PlaceholderText="Search...";search.ClearTextOnFocus=false;search.TextColor3=self.CurrentTheme.Text;search.PlaceholderColor3=self.CurrentTheme.SubText;search.TextSize=12;search.Font=Enum.Font.Gotham;search.BackgroundColor3=self.CurrentTheme.Surface;search.Size=UDim2.fromOffset(115,32);search.Position=UDim2.new(1,-135,0,13);search.Parent=bar;corner(search,8);stroke(search,self.CurrentTheme.Border,.3);w.SearchBox=search end
- local body=Instance.new("Frame");body.BackgroundTransparency=1;body.Position=UDim2.fromOffset(12,60);body.Size=UDim2.new(1,-24,1,-72);body.Parent=main
- local tabs=Instance.new("ScrollingFrame");tabs.BackgroundColor3=self.CurrentTheme.Surface;tabs.BorderSizePixel=0;tabs.Size=UDim2.new(0,145,1,0);tabs.AutomaticCanvasSize=Enum.AutomaticSize.Y;tabs.ScrollBarThickness=2;tabs.Parent=body;corner(tabs,10);stroke(tabs,self.CurrentTheme.Border,.3);pad(tabs,7);local tl=Instance.new("UIListLayout");tl.Padding=UDim.new(0,5);tl.Parent=tabs
- local pages=Instance.new("Frame");pages.BackgroundTransparency=1;pages.Position=UDim2.fromOffset(155,0);pages.Size=UDim2.new(1,-155,1,0);pages.Parent=body
+ if o.Search~=false then
+  search=Instance.new("TextBox");search.PlaceholderText="Search";search.ClearTextOnFocus=false
+  search.TextColor3=self.CurrentTheme.Text;search.PlaceholderColor3=self.CurrentTheme.SubText
+  search.TextSize=11;search.Font=Enum.Font.Gotham;search.BackgroundColor3=self.CurrentTheme.Surface
+  search.Size=UDim2.fromOffset(120,30);search.Position=UDim2.new(1,-190,0,15);search.ZIndex=5;search.Parent=bar
+  corner(search,8);stroke(search,self.CurrentTheme.Border,.3);w.SearchBox=search
+ end
+
+ local function control(label,x,callback)
+  local b=Instance.new("TextButton")
+  b.Text=label;b.TextColor3=self.CurrentTheme.SubText;b.TextSize=13;b.Font=Enum.Font.GothamBold
+  b.AutoButtonColor=false;b.BackgroundColor3=self.CurrentTheme.Surface;b.Size=UDim2.fromOffset(30,30)
+  b.Position=UDim2.new(1,x,0,15);b.ZIndex=5;b.Parent=bar;corner(b,8);stroke(b,self.CurrentTheme.Border,.3)
+  b.MouseEnter:Connect(function() tween(b,.1,{BackgroundColor3=Fluent.CurrentTheme.Hover,TextColor3=Fluent.CurrentTheme.Text}) end)
+  b.MouseLeave:Connect(function() tween(b,.1,{BackgroundColor3=Fluent.CurrentTheme.Surface,TextColor3=Fluent.CurrentTheme.SubText}) end)
+  b.MouseButton1Click:Connect(callback);return b
+ end
+
+ local body=Instance.new("Frame")
+ body.Name="Body";body.BackgroundTransparency=1;body.Position=UDim2.fromOffset(14,66)
+ body.Size=UDim2.new(1,-28,1,-78);body.ZIndex=2;body.Parent=main
+
+ if search then search.Size=UDim2.fromOffset(120,30);search.Position=UDim2.new(1,-195,0,15) end
+ local minimized=false
+ local minButton=control("—",-68,function()
+  minimized=not minimized;body.Visible=not minimized;topLine.Visible=not minimized
+  minButton.Text=minimized and "+" or "—"
+  local h=minimized and 60 or size.Y.Offset
+  main.Size=UDim2.new(size.X.Scale,size.X.Offset,0,h);shadow.Size=main.Size
+ end)
+ local closeButton=control("×",-32,function() w:Destroy() end)
+
+ local sidebar=Instance.new("ScrollingFrame")
+ sidebar.Name="Sidebar";sidebar.BackgroundColor3=self.CurrentTheme.Surface;sidebar.BackgroundTransparency=.2
+ sidebar.BorderSizePixel=0;sidebar.Size=UDim2.new(0,w.TabWidth,1,0)
+ sidebar.AutomaticCanvasSize=Enum.AutomaticSize.Y;sidebar.ScrollBarThickness=2
+ sidebar.ScrollBarImageTransparency=.55;sidebar.ZIndex=3;sidebar.Parent=body;corner(sidebar,11);stroke(sidebar,self.CurrentTheme.Border,.35);pad(sidebar,7)
+ local sl=Instance.new("UIListLayout");sl.Padding=UDim.new(0,5);sl.SortOrder=Enum.SortOrder.LayoutOrder;sl.Parent=sidebar
+
+ local pages=Instance.new("Frame")
+ pages.Name="Pages";pages.BackgroundTransparency=1;pages.Position=UDim2.fromOffset(w.TabWidth+10,0)
+ pages.Size=UDim2.new(1,-w.TabWidth-10,1,0);pages.ZIndex=2;pages.Parent=body
+ w.Sidebar=sidebar;w.Pages=pages
+
  function w:RefreshTheme()
- main.BackgroundColor3=Fluent.CurrentTheme.Background
- title.TextColor3=Fluent.CurrentTheme.Text
- sub.TextColor3=Fluent.CurrentTheme.SubText
- if search then search.BackgroundColor3=Fluent.CurrentTheme.Surface end
- tabs.BackgroundColor3=Fluent.CurrentTheme.Surface
- for _,t in ipairs(self._tabs) do t:RefreshTheme() end
- for _,obj in ipairs(gui:GetDescendants()) do
-  if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
-   obj.TextColor3=Fluent.CurrentTheme.Text
-  elseif obj:IsA("UIStroke") then
-   obj.Color=Fluent.CurrentTheme.Border
+  main.BackgroundColor3=Fluent.CurrentTheme.Background
+  main.BackgroundTransparency=o.Acrylic and .14 or .02
+  gradient.Color=ColorSequence.new(Fluent.CurrentTheme.Background,Fluent.CurrentTheme.Surface)
+  topLine.BackgroundColor3=Fluent.CurrentTheme.Accent
+  title.TextColor3=Fluent.CurrentTheme.Text;sub.TextColor3=Fluent.CurrentTheme.SubText
+  sidebar.BackgroundColor3=Fluent.CurrentTheme.Surface
+  for _,t in ipairs(self._tabs) do t:RefreshTheme() end
+  for _,obj in ipairs(gui:GetDescendants()) do
+   if obj:IsA("UIStroke") then obj.Color=Fluent.CurrentTheme.Border end
   end
  end
-end
- function w:Show() self._visible=true;main.Visible=true end
- function w:Hide() self._visible=false;main.Visible=false end
+
+ function w:Show() self._visible=true;main.Visible=true;shadow.Visible=true end
+ function w:Hide() self._visible=false;main.Visible=false;shadow.Visible=false end
  function w:Toggle() if self._visible then self:Hide() else self:Show() end end
  function w:SelectTab(i)
- local t
- if type(i)=="number" then t=self._tabs[i]
- elseif type(i)=="string" then
-  t=self.Tabs[i] or self.Tabs[i:gsub("%W","")]
+  local t
+  if type(i)=="number" then t=self._tabs[i] elseif type(i)=="string" then t=self.Tabs[i] or self.Tabs[i:gsub("%W","")] end
+  if t then t:Select() end
+  return t
  end
- if t then t:Select() end
- return t
-end
-function w:SetTitle(value) self.Title=tostring(value or "");title.Text=self.Title;return self end
-function w:SetSubtitle(value) self.SubTitle=tostring(value or "");sub.Text=self.SubTitle;return self end
-function w:SetSize(value) self.Size=value;main.Size=value;return self end
-function w:SetPosition(value) main.Position=value;return self end
-function w:GetPosition() return main.Position end
-function w:GetSize() return main.Size end
-function w:Destroy() if self.Gui then self.Gui:Destroy() end end
+ function w:SetTitle(v) self.Title=tostring(v or "");title.Text=self.Title;return self end
+ function w:SetSubtitle(v) self.SubTitle=tostring(v or "");sub.Text=self.SubTitle;return self end
+ function w:SetSize(v) self.Size=v;main.Size=v;shadow.Size=v;return self end
+ function w:SetPosition(v) main.Position=v;shadow.Position=v;return self end
+ function w:GetPosition() return main.Position end
+ function w:GetSize() return main.Size end
+ function w:Destroy() if self.Gui then self.Gui:Destroy() end end
+
  function w:AddTab(to)
-  to=to or {};local t={Window=self,Title=to.Title or "Tab",Elements={}};table.insert(self._tabs,t);self.Tabs[t.Title:gsub("%W","")]=t
-  local tb=button(tabs,t.Title,34);tb.TextXAlignment=Enum.TextXAlignment.Left;t.Button=tb
-  local page=Instance.new("ScrollingFrame");page.BackgroundTransparency=1;page.BorderSizePixel=0;page.Size=UDim2.fromScale(1,1);page.ScrollBarThickness=3;page.AutomaticCanvasSize=Enum.AutomaticSize.Y;page.Visible=false;page.Parent=pages;pad(page,8);local pl=Instance.new("UIListLayout");pl.Padding=UDim.new(0,8);pl.Parent=page;t.Page=page
-  function t:Select() for _,x in ipairs(self.Window._tabs) do x.Page.Visible=false;x.Button.BackgroundColor3=Fluent.CurrentTheme.Surface2 end;self.Page.Visible=true;self.Button.BackgroundColor3=Fluent.CurrentTheme.Accent;self.Window.ActiveTab=self end
-  function t:RefreshTheme() self.Button.TextColor3=Fluent.CurrentTheme.Text;self.Button.BackgroundColor3=self==self.Window.ActiveTab and Fluent.CurrentTheme.Accent or Fluent.CurrentTheme.Surface2 end
-  function t:AddSection(title) local s=addSection(self,title);table.insert(self.Elements,s);return s end
-  function t:AddCollapsibleSection(title)
- local section=self:AddSection(title)
- section._collapsed=false
- local original=section.SetSearch
- local header=section.Frame:FindFirstChildOfClass("TextLabel")
- local layout=section.Frame:FindFirstChildOfClass("UIListLayout")
- function section:Toggle()
-  self._collapsed=not self._collapsed
-  for _,child in ipairs(self.Frame:GetChildren()) do
-   if child~=header and child~=layout and not child:IsA("UIPadding") then child.Visible=not self._collapsed end
+  to=to or {}
+  local t={Window=self,Title=to.Title or "Tab",Icon=to.Icon,Elements={}}
+  table.insert(self._tabs,t);self.Tabs[t.Title:gsub("%W","")]=t
+
+  local tb=Instance.new("TextButton")
+  tb.AutoButtonColor=false;tb.Text="";tb.BackgroundColor3=Fluent.CurrentTheme.Surface2;tb.BackgroundTransparency=.45
+  tb.Size=UDim2.new(1,0,0,38);tb.ZIndex=4;tb.LayoutOrder=#self._tabs;tb.Parent=sidebar;corner(tb,8)
+
+  local accent=Instance.new("Frame")
+  accent.BackgroundColor3=Fluent.CurrentTheme.Accent;accent.BackgroundTransparency=1;accent.Size=UDim2.fromOffset(3,20)
+  accent.AnchorPoint=Vector2.new(0,.5);accent.Position=UDim2.new(0,2,.5,0);accent.ZIndex=5;accent.Parent=tb;corner(accent,2)
+
+  local icon=Instance.new("ImageLabel")
+  icon.BackgroundTransparency=1;icon.Size=UDim2.fromOffset(17,17);icon.Position=UDim2.fromOffset(11,10);icon.ZIndex=5;icon.Parent=tb
+  if type(to.Icon)=="string" and string.find(to.Icon,"rbxassetid://",1,true) then icon.Image=to.Icon end
+
+  local label=text(tb,t.Title,12,Fluent.CurrentTheme.SubText)
+  label.Position=UDim2.fromOffset(to.Icon and 36 or 14,0);label.Size=UDim2.new(1,-(to.Icon and 46 or 24),1)
+  label.ZIndex=5;label.Font=Enum.Font.GothamMedium
+
+  local page=Instance.new("ScrollingFrame")
+  page.BackgroundTransparency=1;page.BorderSizePixel=0;page.Size=UDim2.fromScale(1,1)
+  page.ScrollBarThickness=3;page.ScrollBarImageTransparency=.55;page.AutomaticCanvasSize=Enum.AutomaticSize.Y
+  page.Visible=false;page.ZIndex=2;page.Parent=pages;pad(page,4)
+  local pl=Instance.new("UIListLayout");pl.Padding=UDim.new(0,8);pl.SortOrder=Enum.SortOrder.LayoutOrder;pl.Parent=page
+  t.Page=page;t.Button=tb;t.Accent=accent;t.Label=label
+
+  tb.MouseEnter:Connect(function()
+   if self.ActiveTab~=t then tween(tb,.1,{BackgroundTransparency=.1,BackgroundColor3=Fluent.CurrentTheme.Hover}) end
+  end)
+  tb.MouseLeave:Connect(function()
+   if self.ActiveTab~=t then tween(tb,.1,{BackgroundTransparency=.45,BackgroundColor3=Fluent.CurrentTheme.Surface2}) end
+  end)
+
+  function t:Select()
+   for _,x in ipairs(self.Window._tabs) do
+    x.Page.Visible=false;x.Button.BackgroundColor3=Fluent.CurrentTheme.Surface2;x.Button.BackgroundTransparency=.45
+    x.Accent.BackgroundTransparency=1;x.Label.TextColor3=Fluent.CurrentTheme.SubText
+   end
+   self.Page.Visible=true;self.Button.BackgroundColor3=Fluent.CurrentTheme.Accent;self.Button.BackgroundTransparency=.78
+   self.Accent.BackgroundTransparency=0;self.Label.TextColor3=Fluent.CurrentTheme.Text;self.Window.ActiveTab=self
   end
-  self.Frame.Size=UDim2.new(1,0,0,self._collapsed and 38 or layout.AbsoluteContentSize.Y+16)
-  return self
- end
- return section
-end
+
+  function t:RefreshTheme()
+   self.Button.BackgroundColor3=self==self.Window.ActiveTab and Fluent.CurrentTheme.Accent or Fluent.CurrentTheme.Surface2
+   self.Button.BackgroundTransparency=self==self.Window.ActiveTab and .78 or .45
+   self.Accent.BackgroundColor3=Fluent.CurrentTheme.Accent
+   self.Label.TextColor3=self==self.Window.ActiveTab and Fluent.CurrentTheme.Text or Fluent.CurrentTheme.SubText
+  end
+
+  function t:AddSection(titleText) local s=addSection(self,titleText);table.insert(self.Elements,s);return s end
+  function t:AddCollapsibleSection(titleText)
+   local s=self:AddSection(titleText);local collapsed=false
+   local hit=Instance.new("TextButton");hit.BackgroundTransparency=1;hit.Text="";hit.Size=UDim2.new(1,0,0,28);hit.ZIndex=10;hit.Parent=s.Frame
+   hit.MouseButton1Click:Connect(function()
+    collapsed=not collapsed
+    for _,child in ipairs(s.Frame:GetChildren()) do
+     if child~=hit and not child:IsA("TextLabel") and not child:IsA("UIListLayout") and not child:IsA("UIPadding") then child.Visible=not collapsed end
+    end
+   end)
+   return s
+  end
+
   if #self._tabs==1 then t:Select() end
   return t
  end
- if search then search:GetPropertyChangedSignal("Text"):Connect(function() local q=string.lower(search.Text);for _,t in ipairs(w._tabs) do for _,e in ipairs(t.Elements) do if e.SetSearch then e:SetSearch(q) end end end end) end
+
+ if search then
+  search:GetPropertyChangedSignal("Text"):Connect(function()
+   local q=string.lower(search.Text)
+   for _,t in ipairs(w._tabs) do for _,e in ipairs(t.Elements) do if e.SetSearch then e:SetSearch(q) end end end
+  end)
+ end
  UserInputService.InputBegan:Connect(function(i,g) if not g and i.KeyCode==(o.MinimizeKey or Enum.KeyCode.RightControl) then w:Toggle() end end)
+
  function w:Dialog(x)
-  x=x or {};local overlay=Instance.new("Frame");overlay.BackgroundColor3=Color3.new(0,0,0);overlay.BackgroundTransparency=.35;overlay.Size=UDim2.fromScale(1,1);overlay.ZIndex=50;overlay.Parent=gui
-  local card=Instance.new("Frame");card.Size=UDim2.fromOffset(390,210);card.Position=UDim2.new(.5,-195,.5,-105);card.BackgroundColor3=Fluent.CurrentTheme.Surface;card.ZIndex=51;card.Parent=overlay;corner(card,12);stroke(card,Fluent.CurrentTheme.Border);pad(card,18)
-  local h=text(card,x.Title or "Dialog",18);h.Size=UDim2.new(1,-36,0,25);h.ZIndex=52;local c=text(card,x.Content or "",12,Fluent.CurrentTheme.SubText);c.Position=UDim2.fromOffset(18,55);c.Size=UDim2.new(1,-36,0,65);c.ZIndex=52
-  local row=Instance.new("Frame");row.BackgroundTransparency=1;row.Position=UDim2.new(0,18,1,-55);row.Size=UDim2.new(1,-36,0,38);row.ZIndex=52;row.Parent=card;local rl=Instance.new("UIListLayout");rl.FillDirection=Enum.FillDirection.Horizontal;rl.HorizontalAlignment=Enum.HorizontalAlignment.Right;rl.Padding=UDim.new(0,8);rl.Parent=row
-  for _,b in ipairs(x.Buttons or {{Title="Close"}}) do local z=button(row,b.Title or "Close",36);z.Size=UDim2.fromOffset(95,36);z.ZIndex=53;z.MouseButton1Click:Connect(function() safe(b.Callback);overlay:Destroy() end) end
+  x=x or {}
+  local overlay=Instance.new("Frame");overlay.BackgroundColor3=Color3.new(0,0,0);overlay.BackgroundTransparency=.4;overlay.Size=UDim2.fromScale(1,1);overlay.ZIndex=100;overlay.Parent=gui
+  local card=Instance.new("Frame");card.Size=UDim2.fromOffset(420,230);card.AnchorPoint=Vector2.new(.5,.5);card.Position=UDim2.fromScale(.5,.5);card.BackgroundColor3=Fluent.CurrentTheme.Surface;card.ZIndex=101;card.Parent=overlay;corner(card,14);stroke(card,Fluent.CurrentTheme.Border,.05);pad(card,18)
+  local h=text(card,x.Title or "Dialog",18);h.Size=UDim2.new(1,-36,0,28);h.ZIndex=102;h.Font=Enum.Font.GothamBold
+  local cc=text(card,x.Content or "",12,Fluent.CurrentTheme.SubText);cc.Position=UDim2.fromOffset(18,58);cc.Size=UDim2.new(1,-36,0,70);cc.ZIndex=102
+  local row=Instance.new("Frame");row.BackgroundTransparency=1;row.Position=UDim2.new(0,18,1,-56);row.Size=UDim2.new(1,-36,0,38);row.ZIndex=102;row.Parent=card
+  local rl=Instance.new("UIListLayout");rl.FillDirection=Enum.FillDirection.Horizontal;rl.HorizontalAlignment=Enum.HorizontalAlignment.Right;rl.Padding=UDim.new(0,8);rl.Parent=row
+  for _,b in ipairs(x.Buttons or {{Title="Close"}}) do
+   local z=button(row,b.Title or "Close",36);z.Size=UDim2.fromOffset(100,36);z.ZIndex=103
+   z.MouseButton1Click:Connect(function() safe(b.Callback);overlay:Destroy() end)
+  end
   return overlay
  end
  return w
