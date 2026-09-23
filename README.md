@@ -2,9 +2,12 @@
 
 A modern, independent Luau UI framework for Roblox with a Fluent-style API, modular architecture, a large preset theme system, and polished runtime controls.
 
-## 0.3.0-beta
+## 0.4.0-beta
 
-- Expanded the built-in theme catalog to 20+ presets.
+- Expanded and synchronized the built-in theme catalog to 24 presets.
+- Added a full documentation and examples suite.
+- Added upstream attribution and compatibility notes.
+- Added repository structure matching the ecosystem layout without copying upstream source verbatim.
 - Added safer custom-theme registration with Dark-theme fallbacks.
 - Added theme inspection and reset helpers.
 - Fixed SafeCall and Tween helper scope issues.
@@ -49,3 +52,14 @@ The public API is intentionally close to Fluent-modded where practical, while th
 Rojo project files and optional modules live in `src/`. Use `example/Showcase.lua` to explore the API.
 
 See `docs/API.md` for the current API reference.
+
+## Documentation
+
+- `docs/GETTING_STARTED.md` — beginner setup
+- `docs/EXAMPLES.md` — copy-paste examples
+- `docs/THEMES.md` — theme system
+- `docs/MIGRATION.md` — migration notes
+- `docs/FAQ.md` — common questions
+- `docs/ARCHITECTURE.md` — project architecture
+- `ElementsAndComponents.md` — component index
+- `CREDITS.md` — attribution
