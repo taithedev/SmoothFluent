@@ -4,7 +4,7 @@ local TextService=game:GetService("TextService")
 local CoreGui=game:GetService("CoreGui")
 
 local Fluent={
- Version="0.2.0-beta",
+ Version="0.3.0-beta",
  Flags={},Options={},Themes={},_windows={},
  _connections={},_destroyed=false
 }
@@ -19,6 +19,18 @@ Fluent.Themes={
 Fluent.CurrentTheme=Fluent.Themes.Dark
 
 Fluent._errorHandler=function() end
+
+local function safe(fn,...)
+ if not fn then return end
+ local ok,res=xpcall(fn,debug.traceback,...)
+ if not ok then pcall(Fluent._errorHandler,res,res) end
+ return res
+end
+local function tween(o,t,p)
+ local x=TweenService:Create(o,TweenInfo.new(t or .16,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),p)
+ x:Play()
+ return x
+end
 
 function Fluent:_attachOption(flag, option)
  if type(option) ~= "table" then return option end
@@ -94,14 +106,27 @@ function Fluent:ListThemes()
  return names
 end
 
-
-local function safe(fn,...)
- if not fn then return end
- local ok,res=xpcall(fn,debug.traceback,...)
- if not ok then pcall(Fluent._errorHandler,res,res) end
- return res
+function Fluent:HasTheme(name)
+ return self.Themes[name] ~= nil
 end
-local function tween(o,t,p) local x=TweenService:Create(o,TweenInfo.new(t or .16,Enum.EasingStyle.Quart,Enum.EasingDirection.Out),p);x:Play();return x end
+
+function Fluent:CreateTheme(name,theme)
+ return self:RegisterCustomTheme(name,theme)
+end
+
+function Fluent:RemoveTheme(name)
+ if name=="Dark" then return false end
+ if not self.Themes[name] then return false end
+ self.Themes[name]=nil
+ if self.CurrentTheme==self.Themes[name] then self.CurrentTheme=self.Themes.Dark end
+ return true
+end
+
+function Fluent:ResetTheme()
+ return self:SetTheme("Dark")
+end
+
+
 local function corner(p,r) local x=Instance.new("UICorner");x.CornerRadius=UDim.new(0,r or 8);x.Parent=p end
 local function stroke(p,c,tr) local x=Instance.new("UIStroke");x.Color=c or Fluent.CurrentTheme.Border;x.Transparency=tr or 0;x.Parent=p end
 local function pad(p,n) local x=Instance.new("UIPadding");x.PaddingTop=UDim.new(0,n);x.PaddingBottom=UDim.new(0,n);x.PaddingLeft=UDim.new(0,n);x.PaddingRight=UDim.new(0,n);x.Parent=p end
@@ -111,8 +136,22 @@ local function parentGui() local ok,h=pcall(function() return gethui and gethui(
 local function drag(handle,target) local active,start,pos;handle.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 or i.UserInputType==Enum.UserInputType.Touch then active=true;start=i.Position;pos=target.Position;i.Changed:Connect(function() if i.UserInputState==Enum.UserInputState.End then active=false end end) end end);UserInputService.InputChanged:Connect(function(i) if active and (i.UserInputType==Enum.UserInputType.MouseMovement or i.UserInputType==Enum.UserInputType.Touch) then local d=i.Position-start;target.Position=UDim2.new(pos.X.Scale,pos.X.Offset+d.X,pos.Y.Scale,pos.Y.Offset+d.Y) end end) end
 
 function Fluent:SetErrorHandler(fn) self._errorHandler=fn or function() end;return self end
-function Fluent:RegisterCustomTheme(name,theme) self.Themes[name]=theme;return self end
-function Fluent:SetTheme(name) local t=self.Themes[name];if not t then return false end;self.CurrentTheme=t;for _,w in ipairs(self._windows) do w:RefreshTheme() end;return true end
+function Fluent:RegisterCustomTheme(name,theme)
+ if type(name)~="string" or name=="" or type(theme)~="table" then return false end
+ local base=self.Themes.Dark
+ local merged={}
+ for k,v in pairs(base) do merged[k]=v end
+ for k,v in pairs(theme) do merged[k]=v end
+ self.Themes[name]=merged
+ return true
+end
+function Fluent:SetTheme(name)
+ local t=self.Themes[name]
+ if not t then return false end
+ self.CurrentTheme=t
+ for _,w in ipairs(self._windows) do w:RefreshTheme() end
+ return true
+end
 
 local function makeElement(parent,title,desc,height)
  local f=Instance.new("Frame");f.BackgroundColor3=Fluent.CurrentTheme.Surface;f.Size=UDim2.new(1,0,0,height or (desc and 64 or 48));f.Parent=parent;corner(f,9);stroke(f,Fluent.CurrentTheme.Border,.3);pad(f,10)
@@ -257,7 +296,21 @@ function Fluent:CreateWindow(o)
  local body=Instance.new("Frame");body.BackgroundTransparency=1;body.Position=UDim2.fromOffset(12,60);body.Size=UDim2.new(1,-24,1,-72);body.Parent=main
  local tabs=Instance.new("ScrollingFrame");tabs.BackgroundColor3=self.CurrentTheme.Surface;tabs.BorderSizePixel=0;tabs.Size=UDim2.new(0,145,1,0);tabs.AutomaticCanvasSize=Enum.AutomaticSize.Y;tabs.ScrollBarThickness=2;tabs.Parent=body;corner(tabs,10);stroke(tabs,self.CurrentTheme.Border,.3);pad(tabs,7);local tl=Instance.new("UIListLayout");tl.Padding=UDim.new(0,5);tl.Parent=tabs
  local pages=Instance.new("Frame");pages.BackgroundTransparency=1;pages.Position=UDim2.fromOffset(155,0);pages.Size=UDim2.new(1,-155,1,0);pages.Parent=body
- function w:RefreshTheme() main.BackgroundColor3=Fluent.CurrentTheme.Background;title.TextColor3=Fluent.CurrentTheme.Text;sub.TextColor3=Fluent.CurrentTheme.SubText;if search then search.BackgroundColor3=Fluent.CurrentTheme.Surface end;tabs.BackgroundColor3=Fluent.CurrentTheme.Surface;for _,t in ipairs(self._tabs) do t:RefreshTheme() end end
+ function w:RefreshTheme()
+ main.BackgroundColor3=Fluent.CurrentTheme.Background
+ title.TextColor3=Fluent.CurrentTheme.Text
+ sub.TextColor3=Fluent.CurrentTheme.SubText
+ if search then search.BackgroundColor3=Fluent.CurrentTheme.Surface end
+ tabs.BackgroundColor3=Fluent.CurrentTheme.Surface
+ for _,t in ipairs(self._tabs) do t:RefreshTheme() end
+ for _,obj in ipairs(gui:GetDescendants()) do
+  if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+   obj.TextColor3=Fluent.CurrentTheme.Text
+  elseif obj:IsA("UIStroke") then
+   obj.Color=Fluent.CurrentTheme.Border
+  end
+ end
+end
  function w:Show() self._visible=true;main.Visible=true end
  function w:Hide() self._visible=false;main.Visible=false end
  function w:Toggle() if self._visible then self:Hide() else self:Show() end end
