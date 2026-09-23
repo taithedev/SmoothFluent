@@ -3,14 +3,94 @@ local UserInputService=game:GetService("UserInputService")
 local TextService=game:GetService("TextService")
 local CoreGui=game:GetService("CoreGui")
 
-local Fluent={Version="0.1.0-alpha",Flags={},Options={},Themes={},_windows={}}
+local Fluent={
+ Version="0.2.0-beta",
+ Flags={},Options={},Themes={},_windows={},
+ _connections={},_destroyed=false
+}
 Fluent.Themes={
  Dark={Accent=Color3.fromRGB(139,92,246),Background=Color3.fromRGB(12,12,16),Surface=Color3.fromRGB(20,20,27),Surface2=Color3.fromRGB(28,28,37),Border=Color3.fromRGB(54,54,68),Text=Color3.fromRGB(245,245,250),SubText=Color3.fromRGB(165,165,180),Hover=Color3.fromRGB(39,39,51),Success=Color3.fromRGB(74,222,128),Warning=Color3.fromRGB(250,204,21),Error=Color3.fromRGB(248,113,113),Info=Color3.fromRGB(96,165,250)},
  AMOLED={Accent=Color3.fromRGB(168,85,247),Background=Color3.new(0,0,0),Surface=Color3.fromRGB(7,7,9),Surface2=Color3.fromRGB(15,15,18),Border=Color3.fromRGB(38,38,43),Text=Color3.fromRGB(250,250,250),SubText=Color3.fromRGB(150,150,158),Hover=Color3.fromRGB(24,24,28),Success=Color3.fromRGB(74,222,128),Warning=Color3.fromRGB(250,204,21),Error=Color3.fromRGB(248,113,113),Info=Color3.fromRGB(96,165,250)},
  Ocean={Accent=Color3.fromRGB(56,189,248),Background=Color3.fromRGB(7,13,20),Surface=Color3.fromRGB(13,22,33),Surface2=Color3.fromRGB(20,32,46),Border=Color3.fromRGB(38,60,79),Text=Color3.fromRGB(239,248,255),SubText=Color3.fromRGB(155,180,198),Hover=Color3.fromRGB(28,45,61),Success=Color3.fromRGB(74,222,128),Warning=Color3.fromRGB(250,204,21),Error=Color3.fromRGB(248,113,113),Info=Color3.fromRGB(96,165,250)}
 }
 Fluent.CurrentTheme=Fluent.Themes.Dark
+
 Fluent._errorHandler=function() end
+
+function Fluent:_attachOption(flag, option)
+ if type(option) ~= "table" then return option end
+ option._changed = option._changed or {}
+ local originalSet = option.SetValue
+ if originalSet and not option._smoothWrapped then
+  option._smoothWrapped = true
+  option.SetValue = function(self, value, ...)
+   local result = originalSet(self, value, ...)
+   for _, callback in ipairs(self._changed) do
+    local ok, err = xpcall(function() callback(self:GetValue(), self) end, debug.traceback)
+    if not ok then pcall(Fluent._errorHandler, err, err) end
+   end
+   return result
+  end
+ end
+ function option:OnChanged(callback)
+  if type(callback) ~= "function" then return self end
+  table.insert(self._changed, callback)
+  return self
+ end
+ function option:RemoveOnChanged(callback)
+  for i=#self._changed,1,-1 do
+   if self._changed[i] == callback then table.remove(self._changed,i) end
+  end
+  return self
+ end
+ function option:Destroy()
+  if self.Frame and self.Frame.Destroy then self.Frame:Destroy() end
+  return self
+ end
+ return option
+end
+
+setmetatable(Fluent.Options, {
+ __newindex=function(t,k,v)
+  rawset(t,k,Fluent:_attachOption(k,v))
+ end
+})
+
+function Fluent:SafeCall(callback,...)
+ return safe(callback,...)
+end
+
+function Fluent:Tween(instance, duration, properties)
+ return tween(instance,duration,properties)
+end
+
+function Fluent:Destroy()
+ self._destroyed=true
+ for _,connection in ipairs(self._connections) do pcall(function() connection:Disconnect() end) end
+ table.clear(self._connections)
+ for _,window in ipairs(self._windows) do
+  pcall(function() if window.Gui then window.Gui:Destroy() end end)
+ end
+ table.clear(self._windows)
+ if self._notifyHolder then pcall(function() self._notifyHolder:Destroy() end) end
+ self._notifyHolder=nil
+end
+
+function Fluent:GetVersion()
+ return self.Version
+end
+
+function Fluent:GetTheme()
+ return self.CurrentTheme
+end
+
+function Fluent:ListThemes()
+ local names={}
+ for name in pairs(self.Themes) do table.insert(names,name) end
+ table.sort(names)
+ return names
+end
+
 
 local function safe(fn,...)
  if not fn then return end
@@ -105,7 +185,7 @@ end
 function Fluent:CreateWindow(o)
  o=o or {};local w={Title=o.Title or "SmoothFluent",SubTitle=o.SubTitle or "",Size=o.Size or UDim2.fromOffset(620,470),Tabs={},_tabs={},_visible=true};table.insert(self._windows,w)
  local gui=Instance.new("ScreenGui");gui.Name="SmoothFluent_"..math.random(10000,99999);gui.ResetOnSpawn=false;gui.IgnoreGuiInset=true;gui.Parent=parentGui();w.Gui=gui
- local main=Instance.new("Frame");main.Size=w.Size;main.Position=UDim2.new(.5,-w.Size.X.Offset/2,.5,-w.Size.Y.Offset/2);main.BackgroundColor3=self.CurrentTheme.Background;main.BackgroundTransparency=.04;main.Parent=gui;corner(main,14);stroke(main,self.CurrentTheme.Border,.1);w.Main=main;drag(main,main)
+ local main=Instance.new("Frame");main.Size=w.Size;main.Position=o.Position or UDim2.new(.5,-w.Size.X.Offset/2,.5,-w.Size.Y.Offset/2);main.BackgroundColor3=self.CurrentTheme.Background;main.BackgroundTransparency=.04;main.Parent=gui;corner(main,14);stroke(main,self.CurrentTheme.Border,.1);w.Main=main;drag(bar or main,main)
  local bar=Instance.new("Frame");bar.BackgroundTransparency=1;bar.Size=UDim2.new(1,0,0,58);bar.Parent=main
  local title=text(bar,w.Title,18);title.Position=UDim2.fromOffset(18,7);title.Size=UDim2.new(1,-180,0,25);title.Font=Enum.Font.GothamBold
  local sub=text(bar,w.SubTitle,11,self.CurrentTheme.SubText);sub.Position=UDim2.fromOffset(19,32);sub.Size=UDim2.new(1,-180,0,18)
