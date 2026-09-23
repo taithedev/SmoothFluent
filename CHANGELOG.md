@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0-beta
+- Synced the standalone core with the full preset theme catalog.
+- Added extensive documentation, examples, migration notes, FAQ, credits, and component reference.
+- Added repository structure placeholders for Addons, Assets, build, and dist.
+- Clarified independent implementation and upstream attribution.
+
 ## 0.3.0-beta
 - Added a 20+ preset theme catalog.
 - Added HasTheme, CreateTheme, RemoveTheme, and ResetTheme.
