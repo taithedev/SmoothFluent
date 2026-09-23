@@ -1,7 +1,18 @@
 local M={Library=nil,Folder="SmoothFluent"}
+
 function M:SetLibrary(x) self.Library=x return self end
-function M:SetFolder(x) self.Folder=x return self end
-function M:ApplyCustomFont() return false,"custom fonts are not available in alpha" end
-function M:BuildInterfaceSection(tab) local s=tab:AddSection("Interface");local names={};for n in pairs(self.Library.Themes) do table.insert(names,n) end;s:AddDropdown("Theme",{Title="Theme",Values=names,Default="Dark",Callback=function(v) self.Library:SetTheme(v) end});return s end
-function M:LoadSettings() return false end
+function M:SetFolder(x) self.Folder=x or "SmoothFluent" return self end
+function M:ApplyCustomFont() return false,"Roblox runtime fonts are handled by the core renderer." end
+function M:BuildInterfaceSection(tab)
+ local section=tab:AddSection("Interface")
+ local names=self.Library and self.Library:ListThemes() or {"Dark"}
+ section:AddDropdown("Theme",{Title="Theme",Values=names,Default=self.Library and self.Library.CurrentTheme and "Dark" or names[1],Callback=function(value)
+  if self.Library then self.Library:SetTheme(value) end
+ end})
+ section:AddToggle("UIVisible",{Title="UI visible",Default=true,Callback=function(value)
+  for _,window in ipairs(self.Library._windows or {}) do if value then window:Show() else window:Hide() end end
+ end})
+ return section
+end
+function M:LoadSettings() return false,"interface settings are runtime-only" end
 return M
