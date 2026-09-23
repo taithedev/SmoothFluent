@@ -1,0 +1,10 @@
+{
+  "name":"smoothfluent",
+  "version":"0.2.0-beta",
+  "private":false,
+  "description":"Independent modern Luau UI framework for Roblox.",
+  "scripts":{
+    "build":"rojo build default.project.json -o SmoothFluent.rbxm",
+    "serve":"rojo serve default.project.json"
+  }
+}
