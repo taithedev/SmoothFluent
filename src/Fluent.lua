@@ -179,14 +179,74 @@ local function addSection(tab,titleText)
  function sec:AddSocial(o) return self:AddButton({Title=o.DisplayName or o.Username or "Social",Description=o.Platform or o.ProfileUrl,Callback=function() if setclipboard and o.ProfileUrl then setclipboard(o.ProfileUrl) end end}) end
  function sec:AddDiscord(o) return self:AddButton({Title="Discord",Description=o.InviteCode or "Invite",Callback=function() if setclipboard and o.InviteCode then setclipboard("https://discord.gg/"..o.InviteCode) end end}) end
  function sec:AddViewport() return self:AddParagraph({Title="Viewport",Content="Viewport renderer is planned for the next renderer module."}) end
- resize();return sec
+ function sec:AddLabel(o)
+ o=o or {}
+ local f=makeElement(holder,o.Title or o.Text or "",nil,o.Height or 42)
+ local label=text(f,o.Text or o.Title or "",o.TextSize or 12,o.Color or Fluent.CurrentTheme.SubText)
+ label.Position=UDim2.fromOffset(10,9)
+ label.Size=UDim2.new(1,-20,0,(o.Height or 42)-18)
+ label.TextWrapped=true
+ return {Frame=f,Label=label,SetValue=function(_,v) label.Text=tostring(v) end,Destroy=function() f:Destroy() end}
+end
+
+function sec:AddMultiDropdown(flag,o)
+ o=o or {}
+ local f=makeElement(holder,o.Title or flag,o.Description,math.max(48, (o.Height or 48)))
+ local values=o.Values or {}
+ local selected={}
+ local b=button(f,"Select",30)
+ b.AnchorPoint=Vector2.new(1,0);b.Position=UDim2.new(1,-10,0,9);b.Size=UDim2.fromOffset(160,30)
+ local function summary()
+  local out={}
+  for _,v in ipairs(values) do if selected[v] then table.insert(out,tostring(v)) end end
+  return #out==0 and "Select" or (#out<=2 and table.concat(out,", ") or tostring(#out).." selected")
+ end
+ local function set(v,fire)
+  selected={}
+  if type(v)=="table" then
+   for k,val in pairs(v) do if val then selected[k]=true elseif table.find(values,k) then selected[k]=false end end
+  end
+  Fluent.Flags[flag]=selected
+  b.Text=summary()
+  if fire then safe(o.Callback,selected) end
+ end
+ b.MouseButton1Click:Connect(function()
+  local menu=Instance.new("Frame")
+  menu.BackgroundColor3=Fluent.CurrentTheme.Surface2
+  menu.Size=UDim2.fromOffset(220,math.min(260,#values*34+12))
+  menu.Position=UDim2.fromOffset(b.AbsolutePosition.X,b.AbsolutePosition.Y+b.AbsoluteSize.Y+4)
+  menu.ZIndex=100;menu.Parent=parentGui();corner(menu,8);stroke(menu,Fluent.CurrentTheme.Border)
+  local sc=Instance.new("ScrollingFrame");sc.BackgroundTransparency=1;sc.BorderSizePixel=0;sc.Size=UDim2.fromScale(1,1);sc.AutomaticCanvasSize=Enum.AutomaticSize.Y;sc.ScrollBarThickness=2;sc.Parent=menu;pad(sc,6)
+  local lay=Instance.new("UIListLayout");lay.Padding=UDim.new(0,4);lay.Parent=sc
+  for _,v in ipairs(values) do
+   local item=button(sc,(selected[v] and "✓ " or "")..tostring(v),30);item.ZIndex=101
+   item.MouseButton1Click:Connect(function()
+    selected[v]=not selected[v]
+    item.Text=(selected[v] and "✓ " or "")..tostring(v)
+    Fluent.Flags[flag]=selected
+    b.Text=summary()
+    safe(o.Callback,selected)
+   end)
+  end
+ end)
+ set(o.Default or {},false)
+ local e={Frame=f,SetValue=function(_,v) set(v,true) end,GetValue=function() return selected end,SetSearch=function(_,q) f.Visible=q=="" or string.find(string.lower(o.Title or flag),q,1,true)~=nil end}
+ Fluent.Options[flag]=e;table.insert(sec.Elements,e);return e
+end
+
+function sec:AddText(o)
+ o=o or {}
+ return self:AddParagraph({Title=o.Title or "",Content=o.Content or o.Text or "",Height=o.Height})
+end
+
+resize();return sec
 end
 
 function Fluent:CreateWindow(o)
  o=o or {};local w={Title=o.Title or "SmoothFluent",SubTitle=o.SubTitle or "",Size=o.Size or UDim2.fromOffset(620,470),Tabs={},_tabs={},_visible=true};table.insert(self._windows,w)
  local gui=Instance.new("ScreenGui");gui.Name="SmoothFluent_"..math.random(10000,99999);gui.ResetOnSpawn=false;gui.IgnoreGuiInset=true;gui.Parent=parentGui();w.Gui=gui
- local main=Instance.new("Frame");main.Size=w.Size;main.Position=o.Position or UDim2.new(.5,-w.Size.X.Offset/2,.5,-w.Size.Y.Offset/2);main.BackgroundColor3=self.CurrentTheme.Background;main.BackgroundTransparency=.04;main.Parent=gui;corner(main,14);stroke(main,self.CurrentTheme.Border,.1);w.Main=main;drag(bar or main,main)
- local bar=Instance.new("Frame");bar.BackgroundTransparency=1;bar.Size=UDim2.new(1,0,0,58);bar.Parent=main
+ local main=Instance.new("Frame");main.Size=w.Size;main.Position=o.Position or UDim2.new(.5,-w.Size.X.Offset/2,.5,-w.Size.Y.Offset/2);main.BackgroundColor3=self.CurrentTheme.Background;main.BackgroundTransparency=.04;main.Parent=gui;corner(main,14);stroke(main,self.CurrentTheme.Border,.1);w.Main=main
+ local bar=Instance.new("Frame");bar.BackgroundTransparency=1;bar.Size=UDim2.new(1,0,0,58);bar.Parent=main;drag(bar,main)
  local title=text(bar,w.Title,18);title.Position=UDim2.fromOffset(18,7);title.Size=UDim2.new(1,-180,0,25);title.Font=Enum.Font.GothamBold
  local sub=text(bar,w.SubTitle,11,self.CurrentTheme.SubText);sub.Position=UDim2.fromOffset(19,32);sub.Size=UDim2.new(1,-180,0,18)
  local search
@@ -198,7 +258,22 @@ function Fluent:CreateWindow(o)
  function w:Show() self._visible=true;main.Visible=true end
  function w:Hide() self._visible=false;main.Visible=false end
  function w:Toggle() if self._visible then self:Hide() else self:Show() end end
- function w:SelectTab(i) local t=self._tabs[i];if t then t:Select() end end
+ function w:SelectTab(i)
+ local t
+ if type(i)=="number" then t=self._tabs[i]
+ elseif type(i)=="string" then
+  t=self.Tabs[i] or self.Tabs[i:gsub("%W","")]
+ end
+ if t then t:Select() end
+ return t
+end
+function w:SetTitle(value) self.Title=tostring(value or "");title.Text=self.Title;return self end
+function w:SetSubtitle(value) self.SubTitle=tostring(value or "");sub.Text=self.SubTitle;return self end
+function w:SetSize(value) self.Size=value;main.Size=value;return self end
+function w:SetPosition(value) main.Position=value;return self end
+function w:GetPosition() return main.Position end
+function w:GetSize() return main.Size end
+function w:Destroy() if self.Gui then self.Gui:Destroy() end end
  function w:AddTab(to)
   to=to or {};local t={Window=self,Title=to.Title or "Tab",Elements={}};table.insert(self._tabs,t);self.Tabs[t.Title:gsub("%W","")]=t
   local tb=button(tabs,t.Title,34);tb.TextXAlignment=Enum.TextXAlignment.Left;t.Button=tb
@@ -206,7 +281,22 @@ function Fluent:CreateWindow(o)
   function t:Select() for _,x in ipairs(self.Window._tabs) do x.Page.Visible=false;x.Button.BackgroundColor3=Fluent.CurrentTheme.Surface2 end;self.Page.Visible=true;self.Button.BackgroundColor3=Fluent.CurrentTheme.Accent;self.Window.ActiveTab=self end
   function t:RefreshTheme() self.Button.TextColor3=Fluent.CurrentTheme.Text;self.Button.BackgroundColor3=self==self.Window.ActiveTab and Fluent.CurrentTheme.Accent or Fluent.CurrentTheme.Surface2 end
   function t:AddSection(title) local s=addSection(self,title);table.insert(self.Elements,s);return s end
-  function t:AddCollapsibleSection(title) return self:AddSection(title) end
+  function t:AddCollapsibleSection(title)
+ local section=self:AddSection(title)
+ section._collapsed=false
+ local original=section.SetSearch
+ local header=section.Frame:FindFirstChildOfClass("TextLabel")
+ local layout=section.Frame:FindFirstChildOfClass("UIListLayout")
+ function section:Toggle()
+  self._collapsed=not self._collapsed
+  for _,child in ipairs(self.Frame:GetChildren()) do
+   if child~=header and child~=layout and not child:IsA("UIPadding") then child.Visible=not self._collapsed end
+  end
+  self.Frame.Size=UDim2.new(1,0,0,self._collapsed and 38 or layout.AbsoluteContentSize.Y+16)
+  return self
+ end
+ return section
+end
   if #self._tabs==1 then t:Select() end
   return t
  end
