@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0-beta
+- Rebuilt the main window renderer around a closer Fluent-style layout.
+- Added polished sidebar selection states, hover transitions, window controls, shadow, gradient surface, acrylic-style transparency, and improved spacing.
+- Improved sliders, toggles, inputs, dropdowns, multi-dropdowns, and keybind presentation.
+- Added component/element architecture folders and acrylic surface foundation.
+- Added Fluent-style UI, element, and theming documentation.
+- Added a dedicated FluentStyleShowcase Studio example.
+
+
 ## 0.4.0-beta
 - Synced the standalone core with the full preset theme catalog.
 - Added extensive documentation, examples, migration notes, FAQ, credits, and component reference.
