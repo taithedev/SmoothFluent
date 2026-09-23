@@ -1,0 +1,11 @@
+{
+  "name": "SmoothFluent",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "SmoothFluent": {
+        "$path": "src"
+      }
+    }
+  }
+}
